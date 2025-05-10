@@ -3,7 +3,6 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { useState, useEffect } from "react"; // Add missing imports [[1]]
-import { auth, signInAnonymously, onAuthStateChanged } from "../firebase";
 
 // Firebase config from Firebase Console
 const firebaseConfig = {
