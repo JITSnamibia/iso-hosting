@@ -1,6 +1,6 @@
 // src/hooks/useFriends.js
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/authContext";
+import { useAuth } from "./useAuth";
 import { db, collections, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, collection } from "../firebase";
 
 export const useFriends = () => {
