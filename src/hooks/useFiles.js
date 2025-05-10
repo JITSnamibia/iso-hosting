@@ -1,5 +1,6 @@
 // src/hooks/useFiles.js
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/authContext";
 import { collections, getDoc, updateDoc, arrayUnion, arrayRemove } from "../firebase";
 
 export const useFiles = () => {

@@ -1,5 +1,6 @@
 // src/hooks/useFriends.js
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/authContext";
 import { collections, getDoc, updateDoc, arrayUnion, arrayRemove } from "../firebase";
 
 export const useFriends = () => {
@@ -59,9 +60,12 @@ export const useFriends = () => {
   // Search users
   const searchUsers = async (query) => {
     if (!query) return setSearchResults([]);
-
+  
     try {
-      const userDoc = await getDoc(collections.users(query));
+      // Query user by email
+      const usersRef = doc(db, "users", query); // Changed from collections.users(query)
+      const userDoc = await getDoc(usersRef);
+      
       setSearchResults(userDoc.exists() ? [query] : []);
     } catch (err) {
       setSearchResults([]);
