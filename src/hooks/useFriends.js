@@ -1,7 +1,7 @@
 // src/hooks/useFriends.js
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/authContext";
-import { collections, getDoc, updateDoc, arrayUnion, arrayRemove } from "../firebase";
+import { db, collections, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, getDocs, collection } from "../firebase";
 
 export const useFriends = () => {
   const [friends, setFriends] = useState([]);
@@ -15,59 +15,98 @@ export const useFriends = () => {
   // Load friends
   useEffect(() => {
     const loadFriends = async () => {
+      if (!user) {
+        setFriends([]);
+        setLoading(false);
+        return;
+      }
       try {
-        const friendDoc = await getDoc(collections.friends(user.uid));
+        const friendDocRef = collections.friends(user.uid);
+        const friendDoc = await getDoc(friendDocRef);
         setFriends(friendDoc.data()?.friends || []);
         setLoading(false);
       } catch (err) {
+        console.error("Failed to load friends:", err);
         setError("Failed to load friends");
         setLoading(false);
       }
     };
 
-    if (user) loadFriends();
+    loadFriends();
   }, [user]);
 
   // Add friend
-  const addFriend = async (email) => {
+  const addFriend = async (friendEmail) => {
+    if (!user || !friendEmail) return;
+    setError(null);
     try {
-      const friendDoc = await getDoc(collections.users(email));
-      if (!friendDoc.exists()) throw new Error("User not found");
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", friendEmail));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        throw new Error("User not found with that email.");
+      }
+
+      if (friendEmail === user.email) {
+        throw new Error("You cannot add yourself as a friend.");
+      }
+
+      if (friends.includes(friendEmail)) {
+        throw new Error("This user is already your friend.");
+      }
 
       await updateDoc(collections.friends(user.uid), {
-        friends: arrayUnion(email)
+        friends: arrayUnion(friendEmail),
       });
 
-      setFriends([...friends, email]);
+      setFriends((prevFriends) => [...prevFriends, friendEmail]);
+      setSearchResults([]); // Clear search results after adding
     } catch (err) {
-      setError(err.message);
+      console.error("Failed to add friend:", err);
+      setError(err.message || "Failed to add friend.");
     }
   };
 
   // Remove friend
   const removeFriend = async (email) => {
+    if (!user || !email) return;
+    setError(null);
     try {
       await updateDoc(collections.friends(user.uid), {
-        friends: arrayRemove(email)
+        friends: arrayRemove(email),
       });
 
-      setFriends(friends.filter(f => f !== email));
+      setFriends((prevFriends) => prevFriends.filter((f) => f !== email));
     } catch (err) {
-      setError(err.message);
+      console.error("Failed to remove friend:", err);
+      setError(err.message || "Failed to remove friend.");
     }
   };
 
   // Search users
-  const searchUsers = async (query) => {
-    if (!query) return setSearchResults([]);
-  
+  const searchUsers = async (searchQuery) => {
+    if (!searchQuery || !searchQuery.includes('@') || !user) {
+      setSearchResults([]);
+      return;
+    }
+    setError(null);
+
     try {
-      // Query user by email
-      const usersRef = doc(db, "users", query); // Changed from collections.users(query)
-      const userDoc = await getDoc(usersRef);
-      
-      setSearchResults(userDoc.exists() ? [query] : []);
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", searchQuery));
+      const querySnapshot = await getDocs(q);
+
+      const results = [];
+      querySnapshot.forEach((doc) => {
+        if (doc.data().email !== user.email) {
+          results.push(doc.data().email);
+        }
+      });
+      setSearchResults(results);
     } catch (err) {
+      console.error("Failed to search users:", err);
+      setError("Failed to search users.");
       setSearchResults([]);
     }
   };

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useFiles } from "../hooks/useFiles";
 import { useFriends } from "../hooks/useFriends";
-import { useNavigate } from "react-router-dom/dist/index.js";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -59,8 +59,8 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end gap-3">
-                    <a href={file.preview} download={file.name} className="text-blue-400 hover:text-blue-300">Download</a>
-                    <button onClick={() => deleteFile(index)} className="text-red-400 hover:text-red-300">Delete</button>
+                    <a href={file.url} download={file.name} className="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener noreferrer">Download</a>
+                    <button onClick={() => deleteFile(file)} className="text-red-400 hover:text-red-300">Delete</button>
                   </div>
                 </div>
               ))}
@@ -71,7 +71,12 @@ export default function Dashboard() {
               <input 
                 type="file" 
                 multiple 
-                onChange={(e) => uploadFile(e.target.files[0])} 
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
+                  }
+                  e.target.value = null; // Reset file input
+                }} 
                 className="hidden" 
               />
             </label>
