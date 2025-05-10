@@ -3,15 +3,15 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import {
   db,
-  collections, 
-  doc,       
+  collections, // Custom helper for doc references
+  doc,       // Firestore doc function
   getDoc,
   getDocs,
-  setDoc,    
+  setDoc,    // For initializing friends doc if it doesn't exist
   updateDoc,
   arrayUnion,
   arrayRemove,
-  fbCollection, 
+  collection as fbCollection, // Alias Firestore's collection to fbCollection
   query,
   where,
   onSnapshot,
@@ -19,8 +19,8 @@ import {
   deleteDoc,
   serverTimestamp,
   writeBatch,
-  orderBy 
-} from "../firebase"; 
+  orderBy // For ordering requests, e.g., by createdAt
+} from "../firebase"; // Ensure all these are exported from firebase.js
 
 export const useFriends = () => {
   const { user } = useAuth(); 

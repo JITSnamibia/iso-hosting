@@ -16,7 +16,9 @@ import {
   where,
   getDocs,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  onSnapshot,
+  orderBy
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -67,5 +69,7 @@ export {
   where,
   getDocs,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  onSnapshot,
+  orderBy
 };
