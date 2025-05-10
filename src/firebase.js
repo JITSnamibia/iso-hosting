@@ -1,21 +1,23 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
-// Your Firebase config (from Firebase Console)
+// Firebase config from Firebase Console
 const firebaseConfig = {
-  apiKey: "AIzaSyAa1EX1N6av29rLkkFOHeDCHSiY1El9d40",
-  authDomain: "iso-hosting-88c54.firebaseapp.com",
-  projectId: "iso-hosting-88c54",
-  storageBucket: "iso-hosting-88c54.firebasestorage.app",
-  messagingSenderId: "807836563867",
-  appId: "1:807836563867:web:4a1d655bcb3ae22dd4093e",
-  measurementId: "G-4FYLPHND06"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Collections
 const collections = {
@@ -24,4 +26,4 @@ const collections = {
   files: collection(db, "files")
 };
 
-export { db, collections, doc, getDoc, setDoc, onSnapshot };
+export { app, db, auth, collections, doc, getDoc, setDoc, onSnapshot, signInAnonymously, onAuthStateChanged };

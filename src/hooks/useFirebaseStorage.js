@@ -7,10 +7,8 @@ export const useFirebaseStorage = (collectionName, initialValue) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Document reference for this collection
   const dataDocRef = doc(collections[collectionName], "data");
 
-  // Load initial data and set up real-time listener
   useEffect(() => {
     const unsubscribe = onSnapshot(
       dataDocRef,
@@ -18,13 +16,13 @@ export const useFirebaseStorage = (collectionName, initialValue) => {
         if (docSnapshot.exists()) {
           setData(docSnapshot.data().value);
         } else {
-          // Create document with initial value if it doesn't exist
           await setDoc(dataDocRef, { value: initialValue });
           setData(initialValue);
         }
         setLoading(false);
       },
       (err) => {
+        console.error(`Firestore error in ${collectionName}:`, err);
         setError(err);
         setLoading(false);
       }
@@ -33,14 +31,13 @@ export const useFirebaseStorage = (collectionName, initialValue) => {
     return () => unsubscribe();
   }, [collectionName, initialValue]);
 
-  // Update data in Firestore
   const updateData = async (newValue) => {
     try {
       await setDoc(dataDocRef, { value: newValue });
       setData(newValue);
       return true;
     } catch (err) {
-      console.error("Error updating Firestore:", err);
+      console.error(`Failed to update ${collectionName}:`, err);
       setError(err);
       return false;
     }

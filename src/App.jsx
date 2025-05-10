@@ -91,23 +91,17 @@ const FriendCard = React.memo(({ friend }) => (
 
 export default function App() {
   // Firebase Auth
-  const { user, loading: authLoading } = useFirebaseAuth();
+  const { user, loading: authLoading, error: authError } = useFirebaseAuth();
 
   // Firebase Storage
-  const [servers, setServers, serversLoading] = useFirebaseStorage("servers", []);
-  const [friends, setFriends, friendsLoading] = useFirebaseStorage("friends", []);
-  const [files, setFiles, filesLoading] = useFirebaseStorage("files", []);
+  const [servers, setServers, serversLoading, serversError] = useFirebaseStorage("servers", []);
+  const [friends, setFriends, friendsLoading, friendsError] = useFirebaseStorage("friends", []);
+  const [files, setFiles, filesLoading, filesError] = useFirebaseStorage("files", []);
 
   // State
   const [activeTab, setActiveTab] = useState("games");
   const [theme, setTheme] = useState("dark");
-  const [newServer, setNewServer] = useState({
-    name: "",
-    type: "game",
-    ip: "",
-    port: "",
-    maxPlayers: 0
-  });
+  const [newServer, setNewServer] = useState({ name: "", type: "game", ip: "", port: "", maxPlayers: 0 });
   const [newFriend, setNewFriend] = useState({ name: "", status: "offline", game: "" });
   const [isAddServerModalOpen, setIsAddServerModalOpen] = useState(false);
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
@@ -132,12 +126,17 @@ export default function App() {
 
   // Toggle server status
   const toggleServerStatus = async (id) => {
-    const updatedServers = servers.map((server) =>
-      server.id === id
-        ? { ...server, status: server.status === "online" ? "offline" : "online" }
-        : server
-    );
-    await setServers(updatedServers);
+    try {
+      const updatedServers = servers.map((server) =>
+        server.id === id
+          ? { ...server, status: server.status === "online" ? "offline" : "online" }
+          : server
+      );
+      await setServers(updatedServers);
+    } catch (err) {
+      console.error("Failed to update server status:", err);
+      alert("Failed to update server status. Check console for details.");
+    }
   };
 
   // Add server
@@ -145,17 +144,21 @@ export default function App() {
     e.preventDefault();
     if (!newServer.name || !newServer.ip || !newServer.port) return;
 
-    await setServers([
-      ...servers,
-      {
-        ...newServer,
-        id: Date.now(),
-        status: "offline"
-      }
-    ]);
-
-    setNewServer({ ...newServer, name: "", ip: "", port: "" });
-    setIsAddServerModalOpen(false);
+    try {
+      await setServers([
+        ...servers,
+        {
+          ...newServer,
+          id: Date.now(),
+          status: "offline"
+        }
+      ]);
+      setNewServer({ name: "", ip: "", port: "", maxPlayers: 0 });
+      setIsAddServerModalOpen(false);
+    } catch (err) {
+      console.error("Failed to add server:", err);
+      alert("Failed to add server. Check console for details.");
+    }
   };
 
   // Add friend
@@ -163,9 +166,14 @@ export default function App() {
     e.preventDefault();
     if (!newFriend.name) return;
 
-    await setFriends([...friends, { ...newFriend, id: Date.now() }]);
-    setNewFriend({ ...newFriend, name: "" });
-    setIsAddFriendModalOpen(false);
+    try {
+      await setFriends([...friends, { ...newFriend, id: Date.now() }]);
+      setNewFriend({ name: "", status: "offline", game: "" });
+      setIsAddFriendModalOpen(false);
+    } catch (err) {
+      console.error("Failed to add friend:", err);
+      alert("Failed to add friend. Check console for details.");
+    }
   };
 
   // Handle file upload
@@ -177,18 +185,42 @@ export default function App() {
       lastModified: file.lastModified,
       preview: URL.createObjectURL(file)
     }));
-    await setFiles([...files, ...uploadedFiles]);
+
+    try {
+      await setFiles([...files, ...uploadedFiles]);
+    } catch (err) {
+      console.error("Failed to upload files:", err);
+      alert("Failed to upload files. Check console for details.");
+    }
   };
 
   // Delete file
   const deleteFile = async (index) => {
-    const updatedFiles = files.filter((_, i) => i !== index);
-    await setFiles(updatedFiles);
+    try {
+      const updatedFiles = files.filter((_, i) => i !== index);
+      await setFiles(updatedFiles);
+    } catch (err) {
+      console.error("Failed to delete file:", err);
+      alert("Failed to delete file. Check console for details.");
+    }
   };
 
   // Loading state
   if (authLoading || serversLoading || friendsLoading || filesLoading) {
-    return <div className="text-center p-8">Loading...</div>;
+    return <div className="text-center p-8">Initializing Firebase...</div>;
+  }
+
+  // Show errors
+  if (authError) {
+    return <div className="text-red-500 text-center p-8">Auth Error: {authError.message}</div>;
+  }
+  if (serversError || friendsError || filesError) {
+    return (
+      <div className="text-red-500 text-center p-8">
+        <h2>Firebase Error</h2>
+        <p>{serversError?.message || friendsError?.message || filesError?.message}</p>
+      </div>
+    );
   }
 
   return (
@@ -463,7 +495,13 @@ export default function App() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M7 10a2 2 0 012-2h6a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V10z"
                   />
                 </svg>
                 <p className="text-gray-600 dark:text-gray-400">No friends added yet. Click "Add Friend" to start connecting.</p>
