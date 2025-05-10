@@ -1,7 +1,7 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Firebase config from Firebase Console
@@ -27,4 +27,4 @@ const collections = {
   files: (userId) => doc(db, "files", userId)
 };
 
-export { auth, db, storage, collections, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove };
+export { auth, db, storage, collections, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection };
