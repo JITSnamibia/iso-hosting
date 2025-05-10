@@ -1,3 +1,5 @@
+// src/hooks/useFirebaseAuth.js
+import { useState, useEffect } from "react"; // 🔥 Must be at the top
 import { auth, signInAnonymously, onAuthStateChanged } from "../firebase";
 
 export const useFirebaseAuth = () => {
@@ -12,7 +14,6 @@ export const useFirebaseAuth = () => {
         setLoading(false);
       } else {
         try {
-          // Ensure anonymous sign-in is enabled in Firebase Console
           await signInAnonymously(auth);
         } catch (err) {
           console.error("Anonymous auth failed:", err);
