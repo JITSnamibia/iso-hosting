@@ -1,7 +1,9 @@
+// src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 
+// Firebase config from Firebase Console
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -11,14 +13,16 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
+// Collections
 const collections = {
-  servers: collection(db, "servers"),
-  friends: collection(db, "friends"),
-  files: collection(db, "files")
+  users: (userId) => doc(db, "users", userId),
+  friends: (userId) => doc(db, "friends", userId),
+  files: (userId) => doc(db, "files", userId)
 };
 
-export { db, auth, signInAnonymously, onAuthStateChanged, collections, doc, getDoc, setDoc, onSnapshot };
+export { auth, db, collections, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove };

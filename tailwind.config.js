@@ -1,18 +1,30 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx,html}"],
   darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
-      backgroundColor: {
-        'glass': 'rgba(255, 255, 255, 0.05)',
+      colors: {
+        neon: {
+          DEFAULT: '#00f2ff',
+          light: '#00f2ff88',
+        },
+        pink: {
+          DEFAULT: '#ff00d4',
+          light: '#ff00d488'
+        }
       },
-      backdropBlur: {
-        xs: '2px',
+      keyframes: {
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' }
+        }
       },
+      animation: {
+        'float-slow': 'float 6s ease-in-out infinite',
+      }
     },
   },
   plugins: [],
