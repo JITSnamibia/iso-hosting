@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useFiles } from "../hooks/useFiles";
 import { useFriends } from "../hooks/useFriends";
+import { useNavigate } from "react-router-dom/dist/index.js";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();

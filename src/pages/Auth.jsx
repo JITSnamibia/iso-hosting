@@ -1,6 +1,6 @@
 // src/pages/Auth.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom/dist/index.js";
 import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, collections, setDoc, doc } from "../firebase";
 
 export default function AuthPage() {

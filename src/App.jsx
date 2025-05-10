@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import AuthPage from "./pages/Auth";
+import AuthPage from "./pages/auth";
 import Dashboard from "./pages/Dashboard";
 
 export default function App() {
