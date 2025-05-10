@@ -1,7 +1,23 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  collection,
+  addDoc,
+  deleteDoc,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+  writeBatch
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Firebase config from Firebase Console
@@ -20,11 +36,36 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Collections
+// Collections helpers
 const collections = {
   users: (userId) => doc(db, "users", userId),
+  userCollection: collection(db, "users"),
   friends: (userId) => doc(db, "friends", userId),
+  friendRequestsCollection: collection(db, "friendRequests"),
   files: (userId) => doc(db, "files", userId)
 };
 
-export { auth, db, storage, collections, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection };
+export {
+  auth,
+  db,
+  storage,
+  collections,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  collection,
+  addDoc,
+  deleteDoc,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+  writeBatch
+};

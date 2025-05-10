@@ -1,22 +1,95 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
     // Users collection:
-    // - Allow owner to read and write their own document.
-    // - Allow any authenticated user to read the 'email' field (or other public profile fields)
-    //   for the purpose of searching/adding friends.
+    // - Owner can read/write their own document based on specific create/update rules.
+    // - Authenticated users can read user documents for search (e.g., email, displayName).
+    //   IMPORTANT: If sensitive data is added to user documents, this broad read rule
+    //   MUST be replaced with a more restrictive one (e.g., a publicProfiles subcollection for search).
     match /users/{userId} {
-      allow read: if request.auth != null; // Allows reading fields like email for search
-                   // Consider restricting this further to specific fields if needed:
-                   // e.g. if request.auth != null && resource.data.keys().hasAll(['email', 'displayName'])
-      allow write: if request.auth != null && request.auth.uid == userId;
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      allow read: if request.auth != null;
+
+      allow create: if isOwner() &&
+                      request.resource.data.email == request.auth.email &&
+                      request.resource.data.keys().hasAll(['email', 'displayName', 'createdAt']) &&
+                      request.resource.data.displayName is string && request.resource.data.displayName.size() > 0;
+                      // Add other validation for displayName if needed, e.g., length.
+
+      allow update: if isOwner() &&
+                      // Allow updating only specific fields. `updatedAt` should be set by serverTimestamp ideally.
+                      request.resource.data.keys().hasAny(['displayName', 'avatarUrl', 'updatedAt']) &&
+                      // Prevent changing core fields like email or createdAt through this update path.
+                      !('email' in request.resource.data) && 
+                      !('createdAt' in request.resource.data);
+                      // If 'updatedAt' is used, ensure it's a serverTimestamp or valid timestamp.
+
+      allow delete: if false; // Generally, don't allow user documents to be deleted.
     }
 
+    // Friends collection per user.
+    // Only the owner can manage their own friends list.
     match /friends/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Files metadata collection per user.
+    // Only the owner can manage their own file metadata.
     match /files/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Grant write access (create, update, delete) to the owner of the files document.
+      // Individual file documents might be stored in a subcollection /files/{userId}/userFiles/{fileId}
+      // For simplicity, if /files/{userId} is a document holding an array of files:
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // If files are individual documents in a subcollection like /userFilesData/{fileId} with an ownerId field:
+      // match /userFilesData/{fileId} {
+      //   allow read: if request.auth != null && resource.data.ownerId == request.auth.uid; // Or broader if files can be shared
+      //   allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid &&
+      //                   request.resource.data.keys().hasAll(['name', 'type', 'size', 'url', 'createdAt', 'ownerId']);
+      //   allow update: if request.auth != null && resource.data.ownerId == request.auth.uid; // Restrict fields
+      //   allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      // }
+    }
+
+    // Friend Requests Collection
+    // {requestId} would be an auto-generated ID.
+    match /friendRequests/{requestId} {
+      function isRequestSender() {
+        return request.auth != null && request.auth.uid == resource.data.senderId;
+      }
+      function isRequestReceiver() {
+        return request.auth != null && request.auth.uid == resource.data.receiverId;
+      }
+
+      allow read: if request.auth != null && 
+                    (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+
+      allow create: if request.auth != null &&
+                      request.resource.data.senderId == request.auth.uid &&
+                      request.resource.data.receiverId != request.auth.uid && // Cannot send to oneself
+                      request.resource.data.status == 'pending' &&
+                      request.resource.data.keys().hasAll(['senderId', 'receiverId', 'status', 'createdAt', 'updatedAt']) &&
+                      request.resource.data.createdAt == request.time && // Enforce server timestamp on create
+                      request.resource.data.updatedAt == request.time;   // Enforce server timestamp on create
+
+      allow update: if isRequestReceiver() &&
+                      resource.data.status == 'pending' && // Can only update if still pending
+                      request.resource.data.status in ['accepted', 'declined'] &&
+                      // Only status and updatedAt can be changed by receiver.
+                      request.resource.data.keys().hasOnly(['status', 'updatedAt']) && 
+                      request.resource.data.updatedAt == request.time; // Enforce server timestamp on update
+
+      // Sender can delete a PENDING request (cancel).
+      // Receiver can delete a DECLINED request (cleanup).
+      // Accepted requests might be deleted by a background job or kept for history.
+      allow delete: if (isRequestSender() && resource.data.status == 'pending') || 
+                      (isRequestReceiver() && resource.data.status == 'declined');
     }
   }
 }
