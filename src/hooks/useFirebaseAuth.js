@@ -1,5 +1,4 @@
-// src/hooks/useFirebaseAuth.js
-import { useState, useEffect } from "react"; // 🔥 Must be at the top
+import { useEffect, useState } from "react";
 import { auth, signInAnonymously, onAuthStateChanged } from "../firebase";
 
 export const useFirebaseAuth = () => {
@@ -11,16 +10,15 @@ export const useFirebaseAuth = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        setLoading(false);
       } else {
         try {
           await signInAnonymously(auth);
         } catch (err) {
-          console.error("Anonymous auth failed:", err);
-          setError("Firebase auth error: Check Firebase Console for configuration");
+          console.error("Auth failed:", err);
+          setError(err.message);
         }
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();

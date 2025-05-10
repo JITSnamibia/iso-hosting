@@ -1,4 +1,3 @@
-// src/hooks/useFirebaseStorage.js
 import { useEffect, useState } from "react";
 import { collections, doc, getDoc, setDoc, onSnapshot } from "../firebase";
 
@@ -10,26 +9,21 @@ export const useFirebaseStorage = (collectionName, initialValue) => {
   const dataDocRef = doc(collections[collectionName], "data");
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      dataDocRef,
-      async (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          setData(docSnapshot.data().value);
-        } else {
-          await setDoc(dataDocRef, { value: initialValue });
-          setData(initialValue);
-        }
-        setLoading(false);
-      },
-      (err) => {
-        console.error(`Firestore error in ${collectionName}:`, err);
-        setError(err);
-        setLoading(false);
+    const unsubscribe = onSnapshot(dataDocRef, snap => {
+      if (snap.exists()) {
+        setData(snap.data().value);
+      } else {
+        setDoc(dataDocRef, { value: initialValue }).then(() => setData(initialValue));
       }
-    );
+      setLoading(false);
+    }, err => {
+      console.error("Firestore error:", err);
+      setError(err.message);
+      setLoading(false);
+    });
 
     return () => unsubscribe();
-  }, [collectionName, initialValue]);
+  }, [collectionName]);
 
   const updateData = async (newValue) => {
     try {
@@ -37,8 +31,7 @@ export const useFirebaseStorage = (collectionName, initialValue) => {
       setData(newValue);
       return true;
     } catch (err) {
-      console.error(`Failed to update ${collectionName}:`, err);
-      setError(err);
+      setError(err.message);
       return false;
     }
   };
