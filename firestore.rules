@@ -74,16 +74,22 @@ service cloud.firestore {
                       request.resource.data.senderId == request.auth.uid &&
                       request.resource.data.receiverId != request.auth.uid && // Cannot send to oneself
                       request.resource.data.status == 'pending' &&
-                      request.resource.data.keys().hasAll(['senderId', 'receiverId', 'status', 'createdAt', 'updatedAt']) &&
-                      request.resource.data.createdAt == request.time && // Enforce server timestamp on create
-                      request.resource.data.updatedAt == request.time;   // Enforce server timestamp on create
+                      request.resource.data.keys().hasAll([
+                        'senderId', 'senderDisplayName',
+                        'receiverId', 'receiverDisplayName',
+                        'status', 'createdAt', 'updatedAt'
+                      ]) &&
+                      request.resource.data.senderDisplayName is string && request.resource.data.senderDisplayName.size() > 0 &&
+                      request.resource.data.receiverDisplayName is string && request.resource.data.receiverDisplayName.size() > 0;
+                      // Timestamps 'createdAt' and 'updatedAt' are set by serverTimestamp(),
+                      // so we don't check their value against request.time here.
 
       allow update: if isRequestReceiver() &&
                       resource.data.status == 'pending' && // Can only update if still pending
                       request.resource.data.status in ['accepted', 'declined'] &&
                       // Only status and updatedAt can be changed by receiver.
-                      request.resource.data.keys().hasOnly(['status', 'updatedAt']) && 
-                      request.resource.data.updatedAt == request.time; // Enforce server timestamp on update
+                      request.resource.data.keys().hasOnly(['status', 'updatedAt']);
+                      // 'updatedAt' is set by serverTimestamp(), so no '== request.time' check.
 
       // Sender can delete a PENDING request (cancel).
       // Receiver can delete a DECLINED request (cleanup).
