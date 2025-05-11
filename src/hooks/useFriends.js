@@ -211,31 +211,76 @@ export const useFriends = () => {
   };
   
   const sendFriendRequest = async (targetUser) => {
-    if (!currentUserProfile || !targetUser?.id || currentUserProfile.id === targetUser.id) {
-      setError("Invalid target user or missing current user profile.");
+    if (!currentUserProfile || !targetUser?.id) {
+      setError("Cannot send request: current user or target user is invalid.");
       return;
+    }
+    if (currentUserProfile.id === targetUser.id) {
+        setError("You cannot send a friend request to yourself.");
+        return;
     }
     setLoading(prev => ({ ...prev, action: true }));
     setError(null);
     try {
-      if (friends.some(friend => friend.id === targetUser.id)) {
-        throw new Error("You are already friends with this user.");
+      // Ensure we have the displayName for the receiver
+      let finalTargetUser = targetUser;
+      if (!targetUser.displayName) {
+        console.warn(`Target user object for ${targetUser.id} is missing displayName. Fetching profile.`);
+        const fetchedProfile = await fetchUserProfile(targetUser.id);
+        if (fetchedProfile && fetchedProfile.displayName) {
+          finalTargetUser = fetchedProfile;
+        } else {
+          // Fallback if profile fetch fails or still no displayName
+          // Using email as a fallback, or a generic placeholder if email is also missing
+          finalTargetUser = {
+            ...targetUser, // Keep other potential fields from search result
+            displayName: targetUser.email || fetchedProfile?.email || "User"
+          };
+          console.warn(`Could not fetch displayName for ${targetUser.id}. Using fallback: ${finalTargetUser.displayName}`);
+        }
       }
-      if (incomingRequests.some(req => req.senderId === targetUser.id) || 
-          outgoingRequests.some(req => req.receiverId === targetUser.id)) {
-        throw new Error("A friend request already exists with this user.");
+
+      // Check if a request already exists (incoming or outgoing and pending)
+      const existingOutgoingQuery = query(
+        collections.friendRequestsCollection,
+        where("senderId", "==", currentUserProfile.id),
+        where("receiverId", "==", finalTargetUser.id),
+        where("status", "==", "pending")
+      );
+      const existingIncomingQuery = query(
+        collections.friendRequestsCollection,
+        where("senderId", "==", finalTargetUser.id),
+        where("receiverId", "==", currentUserProfile.id),
+        where("status", "==", "pending")
+      );
+
+      const [existingOutgoingSnapshot, existingIncomingSnapshot] = await Promise.all([
+        getDocs(existingOutgoingQuery),
+        getDocs(existingIncomingQuery)
+      ]);
+
+      if (!existingOutgoingSnapshot.empty) {
+        setError("You have already sent a friend request to this user.");
+        setLoading(prev => ({ ...prev, action: false }));
+        return;
+      }
+      if (!existingIncomingSnapshot.empty) {
+        setError("This user has already sent you a friend request. Check your incoming requests.");
+        setLoading(prev => ({ ...prev, action: false }));
+        return;
       }
 
       const requestData = {
         senderId: currentUserProfile.id,
-        senderDisplayName: currentUserProfile.displayName,
-        receiverId: targetUser.id,
-        receiverDisplayName: targetUser.displayName,
+        senderDisplayName: currentUserProfile.displayName || currentUserProfile.email || "User", // Also add fallback for sender
+        receiverId: finalTargetUser.id,
+        receiverDisplayName: finalTargetUser.displayName, // Should now be populated
         status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
       await addDoc(collections.friendRequestsCollection, requestData);
+      // UI will update via onSnapshot for outgoingRequests
     } catch (err) {
       console.error("Failed to send friend request:", err);
       setError(err.message || "Failed to send friend request.");
